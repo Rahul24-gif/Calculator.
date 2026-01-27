@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Smart Calculator Ultimate</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&family=Roboto+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+
+  <!-- Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon-192.png">
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').then(() => console.log('Service Worker Registered'));
+    }
+  </script>
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+
+  <!-- Video Background -->
+  <video autoplay muted loop id="background-video">
+    <source src="https://cdn.pixabay.com/video/2020/02/29/33031-393909839.mp4" type="video/mp4">
+  </video>
+
+  <!-- Abstract Background -->
+  <div class="bg-animation">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+  </div>
+
+  <!-- Top Right Toggles -->
+  <div class="fixed-toggles">
+    <button class="notepad-toggle" onclick="toggleRoughPad()" aria-label="Open Rough Pad">
+      <i class="fas fa-sticky-note"></i>
+    </button>
+    <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle Theme">
+      <i class="fas fa-moon"></i><span class="theme-text">Dark</span>
+    </button>
+  </div>
+
+  <!-- Rough Pad (Floating) -->
+  <div id="roughPad">
+    <div class="rough-pad-header">
+      <h4>Rough Pad</h4>
+      <div style="display:flex; gap:10px;">
+        <i class="fas fa-eraser" onclick="clearRoughPad()" style="cursor:pointer; color:#ef4444;"></i>
+        <i class="fas fa-times" onclick="toggleRoughPad()" style="cursor:pointer;"></i>
+      </div>
+    </div>
+    <textarea id="roughPadText" placeholder="Tyoe quick notes here..." oninput="saveRoughPad()"></textarea>
+  </div>
+
+  <div id="splash">Loading Smart Calculator...</div>
+
+  <div class="main-container">
+
+    <!-- Nav Dock -->
+    <div class="nav-dock">
+      <div class="tabs">
+        <button class="active" onclick="showCalculator('standard')"><i class="fas fa-calculator"></i> Standard</button>
+        <button onclick="showCalculator('cash')"><i class="fas fa-money-bill-wave"></i> Cash</button>
+        <button onclick="showCalculator('loan')"><i class="fas fa-university"></i> Loan</button>
+        <button onclick="showCalculator('cheque')"><i class="fas fa-pen-nib"></i> Cheque</button>
+        <button onclick="showCalculator('unit')"><i class="fas fa-exchange-alt"></i> Unit</button>
+        <button onclick="showCalculator('date')"><i class="far fa-calendar-alt"></i> Date</button>
+        <button onclick="showCalculator('bmi')"><i class="fas fa-weight"></i> BMI</button>
+      </div>
+    </div>
+
+    <!-- Calculator Section -->
+    <div class="calculator-wrapper">
+      <div class="container">
+
+        <!-- 1. STANDARD CALCULATOR -->
+        <div id="standard" role="tabpanel" class="calculator active">
+          <textarea class="display" id="display" aria-live="polite" autocomplete="off" spellcheck="false"
+            readonly></textarea>
+
+          <!-- Voice & TTS Controls -->
+          <div style="display: flex; justify-content: space-between; margin-bottom: 5px; align-items:center;">
+            <div style="display:flex; gap:10px;">
+              <button id="voice-btn" onclick="startVoiceControl()"
+                style="background:var(--btn-bg); border:1px solid var(--glass-border); color:var(--text-main); cursor:pointer; font-size:1.1rem; padding:8px 12px; border-radius:12px; transition:all 0.3s;">
+                <i class="fas fa-microphone"></i>
+              </button>
+              <button id="tts-toggle-btn" onclick="toggleVoiceOutput()"
+                style="background:var(--btn-bg); border:1px solid var(--glass-border); color:var(--text-main); cursor:pointer; font-size:1.1rem; padding:8px 12px; border-radius:12px; transition:all 0.3s;">
+                <i class="fas fa-volume-up"></i>
+              </button>
+            </div>
+
+            <button onclick="shareToWhatsApp('standard')" class="wa-share-btn">
+              <i class="fab fa-whatsapp"></i> Share
+            </button>
+          </div>
+
+          <div class="memory-buttons" style="display:flex; gap:10px; margin-bottom:10px;">
+            <button onclick="memoryStore()" style="flex:1;">M+</button>
+            <button onclick="memorySubtract()" style="flex:1;">M-</button>
+            <button onclick="memoryRecall()" style="flex:1;">MR</button>
+            <button onclick="memoryClear()" style="flex:1;">MC</button>
+          </div>
+          <div class="gst-controls" style="display:flex; gap:10px; margin-bottom:10px; align-items:center;">
+            <select id="gstRate"
+              style="padding:8px; border-radius:12px; border:1px solid var(--glass-border); background:var(--glass-bg); color:var(--text-main); font-weight:600;">
+              <option value="5">GST 5%</option>
+              <option value="12">GST 12%</option>
+              <option value="18" selected>GST 18%</option>
+              <option value="28">GST 28%</option>
+            </select>
+            <button onclick="calculateGST('add')"
+              style="flex:1; padding:8px; border-radius:12px; background:rgba(16, 185, 129, 0.2); color:#10b981; border:1px solid rgba(16, 185, 129, 0.3); font-weight:600; cursor:pointer;">+
+              GST</button>
+            <button onclick="calculateGST('sub')"
+              style="flex:1; padding:8px; border-radius:12px; background:rgba(239, 68, 68, 0.2); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.3); font-weight:600; cursor:pointer;">-
+              GST</button>
+          </div>
+
+          <div class="buttons" id="std-buttons">
+            <button class="btn-clear" onclick="clearDisplay()">C</button>
+            <button onclick="backspace()"><i class="fas fa-backspace"></i></button>
+            <button onclick="press('/')"><i class="fas fa-divide"></i></button>
+            <button onclick="press('*')"><i class="fas fa-times"></i></button>
+            <button onclick="press('7')">7</button>
+            <button onclick="press('8')">8</button>
+            <button onclick="press('9')">9</button>
+            <button onclick="press('-')"><i class="fas fa-minus"></i></button>
+            <button onclick="press('4')">4</button>
+            <button onclick="press('5')">5</button>
+            <button onclick="press('6')">6</button>
+            <button onclick="press('+')"><i class="fas fa-plus"></i></button>
+            <button onclick="press('1')">1</button>
+            <button onclick="press('2')">2</button>
+            <button onclick="press('3')">3</button>
+            <button class="btn-equal" onclick="calculate()"><i class="fas fa-equals"></i></button>
+            <button onclick="press('0')" class="zero">0</button>
+            <button onclick="press('.')">.</button>
+          </div>
+        </div>
+
+        <!-- 2. CASH CALCULATOR -->
+        <div id="cash" role="tabpanel" class="cash-calculator">
+          <div class="cash-table">
+            <div class="cash-row">
+              <label for="c500"><i class="fas fa-rupee-sign"></i> 500</label>
+              <div class="cash-input-total"><input type="number" id="c500" placeholder="Count"><span id="t500"
+                  class="note-total">₹0</span></div>
+            </div>
+            <div class="cash-row">
+              <label for="c200"><i class="fas fa-rupee-sign"></i> 200</label>
+              <div class="cash-input-total"><input type="number" id="c200" placeholder="Count"><span id="t200"
+                  class="note-total">₹0</span></div>
+            </div>
+            <div class="cash-row">
+              <label for="c100"><i class="fas fa-rupee-sign"></i> 100</label>
+              <div class="cash-input-total"><input type="number" id="c100" placeholder="Count"><span id="t100"
+                  class="note-total">₹0</span></div>
+            </div>
+            <div class="cash-row">
+              <label for="c50"><i class="fas fa-rupee-sign"></i> 50</label>
+              <div class="cash-input-total"><input type="number" id="c50" placeholder="Count"><span id="t50"
+                  class="note-total">₹0</span></div>
+            </div>
+            <div class="cash-row">
+              <label for="c20"><i class="fas fa-rupee-sign"></i> 20</label>
+              <div class="cash-input-total"><input type="number" id="c20" placeholder="Count"><span id="t20"
+                  class="note-total">₹0</span></div>
+            </div>
+            <div class="cash-row">
+              <label for="c10"><i class="fas fa-rupee-sign"></i> 10</label>
+              <div class="cash-input-total"><input type="number" id="c10" placeholder="Count"><span id="t10"
+                  class="note-total">₹0</span></div>
+            </div>
+            <div class="cash-row">
+              <label for="coins"><i class="fas fa-coins"></i> Coins</label>
+              <div class="cash-input-total"><input type="number" id="coins" placeholder="Count"><span id="tcoins"
+                  class="note-total">₹0</span></div>
+            </div>
+          </div>
+
+          <div class="display" id="cashTotal">Total: ₹0</div>
+
+          <div class="cash-actions">
+            <button class="btn-save" onclick="saveCashToExcel()"><i class="fas fa-save"></i> Save</button>
+            <button onclick="printCashSummary()"><i class="fas fa-print"></i> Print</button>
+            <button onclick="clearCashInputs()"><i class="fas fa-eraser"></i> Clear</button>
+            <button onclick="shareToWhatsApp('cash')"><i class="fab fa-whatsapp"></i> Share</button>
+          </div>
+        </div>
+
+        <!-- 3. LOAN CALCULATOR -->
+        <div id="loan" role="tabpanel" class="loan-calculator">
+          <div style="flex-grow:1; padding: 5px;">
+            <div class="form-group">
+              <label>Loan Amount (₹)</label>
+              <input type="number" id="loanAmount" class="form-input" placeholder="e.g. 500000">
+            </div>
+            <div class="form-group">
+              <label>Interest Rate (% per annum)</label>
+              <input type="number" id="loanRate" class="form-input" placeholder="e.g. 8.5">
+            </div>
+            <div class="form-group">
+              <label>Loan Tenure (Years)</label>
+              <input type="number" id="loanTerm" class="form-input" placeholder="e.g. 5">
+            </div>
+
+            <div class="form-group">
+              <label>Extra Payment (Monthly) (₹)</label>
+              <input type="number" id="loanExtra" class="form-input" placeholder="e.g. 5000">
+            </div>
+
+            <div class="loan-actions">
+              <button class="btn-calculate-loan" onclick="calculateLoan()">Calculate EMI</button>
+              <button class="btn-clear-loan" onclick="clearLoanInputs()">Clear</button>
+            </div>
+
+            <div class="results-box" id="loanResults" style="display:none;">
+              <div class="result-item"><span>Monthly EMI:</span><span id="emiResult" style="font-weight:600;">₹0</span>
+              </div>
+              <div class="result-item"><span>Total Interest:</span><span id="interestResult">₹0</span></div>
+              <div class="result-item"><span>Total Payment:</span><span id="paymentResult">₹0</span></div>
+
+              <!-- Savings Section -->
+              <div class="result-item highlight-savings" id="savingsBox"
+                style="display:none; margin-top:10px; border-color:#10b981; background:rgba(16, 185, 129, 0.1);">
+                <div style="display:flex; flex-direction:column; width:100%; gap:5px;">
+                  <div style="display:flex; justify-content:space-between;">
+                    <span style="color:#10b981;">Interest Saved:</span><span id="savedInterest"
+                      style="font-weight:700;">₹0</span>
+                  </div>
+                  <div style="display:flex; justify-content:space-between;">
+                    <span style="color:#10b981;">Time Saved:</span><span id="savedTime" style="font-weight:700;">0
+                      Months</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Chart Container -->
+              <div class="chart-container" style="position:relative; height:250px; width:100%; margin-top:20px;">
+                <canvas id="loanChart"></canvas>
+              </div>
+
+              <div style="text-align:right; margin-top:10px;">
+                <button onclick="shareToWhatsApp('loan')" class="wa-share-btn"
+                  style="width:100%; justify-content:center;">
+                  <i class="fab fa-whatsapp"></i> Share Details
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. CHEQUE WRITER (New) -->
+        <div id="cheque" role="tabpanel" class="cheque-writer">
+          <div class="cheque-writer-content">
+            <div class="form-group">
+              <label>Enter Amount (₹)</label>
+              <input type="text" id="chequeInput" class="form-input" placeholder="e.g. 1,25,000"
+                oninput="formatChequeInput(this)">
+            </div>
+
+            <div class="cheque-display-box">
+              <span id="chequeOutput" style="font-style: italic;">Amount in words will appear here...</span>
+            </div>
+
+            <div class="loan-actions">
+              <button class="btn-clear-loan" onclick="clearChequeInput()" style="flex:1;">Clear</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. UNIT CONVERTER -->
+        <div id="convert" role="tabpanel" class="unit-converter">
+          <div class="converter-select-type">
+            <button class="type-btn active" onclick="setConverterType('length')">Length</button>
+            <button class="type-btn" onclick="setConverterType('data')">Data</button>
+            <button class="type-btn" onclick="setConverterType('mass')">Mass</button>
+            <button class="type-btn" onclick="setConverterType('currency')">Currency</button>
+          </div>
+          <div class="converter-grid">
+            <div class="unit-group">
+              <label>From</label>
+              <input type="number" id="convertInput" class="form-input" placeholder="1" oninput="convertUnit()">
+              <select id="unitFrom" class="unit-select" onchange="convertUnit()"></select>
+            </div>
+            <div style="text-align:center; color:var(--text-muted); font-size:1.2rem;"><i class="fas fa-arrow-down"></i>
+            </div>
+            <div class="unit-group">
+              <label>To</label>
+              <input type="text" id="convertOutput" class="form-input" readonly placeholder="Result">
+              <select id="unitTo" class="unit-select" onchange="convertUnit()"></select>
+            </div>
+          </div>
+
+          <div class="loan-actions" style="margin-top:15px;">
+            <button class="btn-clear-loan" onclick="clearConverterInputs()" style="flex:1;">Clear All</button>
+          </div>
+        </div>
+
+        <!-- 6. DATE CALCULATOR -->
+        <div id="date" role="tabpanel" class="date-calculator"
+          style="display:none; flex-direction:column; height:100%; width:100%;">
+          <div class="converter-select-type" style="margin-bottom:15px;">
+            <button class="type-btn active" onclick="showDateMode('age')">Age</button>
+            <button class="type-btn" onclick="showDateMode('diff')">Difference</button>
+          </div>
+          <div id="age-calc" class="date-mode-content">
+            <div class="form-group"><label>Date of Birth</label><input type="date" id="dob" class="form-input"
+                onchange="calculateAge()"></div>
+            <div class="result-item" style="margin-top:20px; flex-direction:column; align-items:center; gap:10px;">
+              <span style="font-size:1rem; color:var(--text-muted);">Your Age:</span>
+              <span id="ageResult" style="font-size:1.5rem; font-weight:700; color:#6366f1;">--</span>
+              <span id="nextBday" style="font-size:0.9rem; color:var(--text-muted);">Next Birthday in: --</span>
+            </div>
+          </div>
+          <div id="diff-calc" class="date-mode-content" style="display:none;">
+            <div class="form-group"><label>Start Date</label><input type="date" id="date1" class="form-input"></div>
+            <div class="form-group"><label>End Date</label><input type="date" id="date2" class="form-input"></div>
+            <button class="btn-calculate-loan" onclick="calculateDateDiff()"
+              style="width:100%; margin-top:10px;">Calculate Difference</button>
+            <div class="result-item" style="margin-top:20px; flex-direction:column; align-items:center; gap:10px;">
+              <span style="font-size:1rem; color:var(--text-muted);">Difference:</span>
+              <span id="diffResult" style="font-size:1.5rem; font-weight:700; color:#ec4899;">--</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 7. BMI CALCULATOR -->
+        <div id="bmi" role="tabpanel" class="bmi-calculator"
+          style="display:none; flex-direction:column; height:100%; width:100%; padding:10px; justify-content:center;">
+          <div class="form-group" style="margin-bottom:20px;">
+            <label>Weight (kg)</label>
+            <input type="number" id="bmiWeight" class="form-input" placeholder="e.g. 70">
+          </div>
+          <div class="form-group" style="margin-bottom:20px;">
+            <label>Height (cm)</label>
+            <input type="number" id="bmiHeight" class="form-input" placeholder="e.g. 175">
+          </div>
+          <div class="loan-actions">
+            <!-- User requested "Same size" for Calculate and Clear buttons -->
+            <button class="btn-calculate-loan" onclick="calculateBMI()"
+              style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); flex:1;">Calculate BMI</button>
+            <button class="btn-clear-loan" onclick="clearBMIInputs()" style="flex:1;">Clear</button>
+          </div>
+          <div class="result-item" style="margin-top:30px; flex-direction:column; align-items:center; gap:10px;">
+            <span style="font-size:1rem; color:var(--text-muted);">Your BMI:</span>
+            <span id="bmiResult" style="font-size:2.5rem; font-weight:700; color:#10b981;">--</span>
+            <span id="bmiCategory" style="font-size:1.1rem; color:#fff; font-weight:500;">--</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- History Panel -->
+    <div class="history-panel" id="history-panel">
+      <h3>History</h3>
+      <div class="history-content" id="history-content" aria-live="polite"></div>
+      <button class="clear-history-panel" onclick="clearHistory()"><i class="fas fa-trash"></i> Clear History</button>
+    </div>
+  </div>
+
+  <footer class="app-footer">
+    Created by Rahul &copy;2026
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+
+</html>
