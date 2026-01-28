@@ -68,6 +68,89 @@
     <textarea id="roughPadText" placeholder="Tyoe quick notes here..." oninput="saveRoughPad()"></textarea>
   </div>
 
+  <!-- Top Left Info Toggle -->
+  <div class="fixed-toggles-left">
+    <button class="info-toggle" onclick="toggleInfo()" aria-label="App Info">
+      <i class="fas fa-info-circle"></i>
+    </button>
+  </div>
+
+  <!-- Info Modal -->
+  <div id="infoModal" class="modal-overlay" onclick="closeInfo(event)">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3><i class="fas fa-calculator"></i> Smart Calc Guide</h3>
+        <button class="close-modal" onclick="toggleInfo()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="info-section">
+          <h4><i class="fas fa-calculator"></i> Standard</h4>
+          <p>Basic calculations with GST (+/-) and Voice Control. Use the microphone for hands-free math!</p>
+        </div>
+        <div class="info-section">
+          <h4><i class="fas fa-money-bill-wave"></i> Cash Token</h4>
+          <p>Tally cash denominations easily. Save summaries to Excel or share via WhatsApp.</p>
+        </div>
+        <div class="info-section">
+          <h4><i class="fas fa-university"></i> Loan EMI</h4>
+          <p>Calculate monthly EMI, total interest, and extra payment savings.</p>
+        </div>
+        <div class="info-section">
+          <h4><i class="fas fa-pen-nib"></i> Cheque Writer</h4>
+          <p>Convert number amounts into words (Indian Format) instantly.</p>
+        </div>
+        <div class="info-section">
+          <h4><i class="fas fa-exchange-alt"></i> Converters</h4>
+          <p>Unit Converter for Length, Mass, Data, Currency. Date Calculator for Age & Duration.</p>
+        </div>
+        <div class="info-section">
+          <h4><i class="fas fa-keyboard"></i> Shortcuts & Features</h4>
+
+          <div style="margin-bottom: 10px; font-size: 0.95rem; font-weight: 600; color: #818cf8;">Global Keys</div>
+          <div class="shortcuts-grid">
+            <div><code class="key">Ctrl + 1-7</code> Switch Modes</div>
+            <div><code class="key">F11</code> Full Screen</div>
+          </div>
+
+          <div class="mode-shortcuts-list">
+
+            <div class="mode-block">
+              <h5>Standard Calculator</h5>
+              <div class="shortcuts-grid">
+                <div><code class="key" title="0-9">Digits</code> Type Numbers</div>
+                <div><code class="key">Enter</code> Calculate (=)</div>
+                <div><code class="key">Esc</code> Clear (C)</div>
+                <div><code class="key">Bksp</code> Remove Last</div>
+              </div>
+            </div>
+
+            <div class="mode-block">
+              <h5>Cash Counter</h5>
+              <div class="shortcuts-grid">
+                <div><code class="key">↑</code> <code class="key">↓</code> Move Up/Down</div>
+                <div><code class="key">Delete</code> Clear All (Reset)</div>
+                <div><code class="key">Tab</code> Next Field</div>
+              </div>
+            </div>
+
+            <div class="mode-block">
+              <h5>Loan / BMI / Converters</h5>
+              <div class="shortcuts-grid">
+                <div><code class="key">Delete</code> Clear Inputs</div>
+                <div><code class="key">Tab</code> Navigate Fields</div>
+                <div><code class="key">Enter</code> Calculate</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+        <div class="info-tip">
+          <i class="fas fa-lightbulb"></i> <strong>Pro Tip:</strong> Toggle "Dark Mode" for a sleek night view!
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="splash">Loading Smart Calculator...</div>
 
   <div class="main-container">
@@ -136,23 +219,28 @@
 
           <div class="buttons" id="std-buttons">
             <button class="btn-clear" onclick="clearDisplay()">C</button>
+            <button onclick="press('%')"><i class="fas fa-percentage"></i></button>
             <button onclick="backspace()"><i class="fas fa-backspace"></i></button>
             <button onclick="press('/')"><i class="fas fa-divide"></i></button>
-            <button onclick="press('*')"><i class="fas fa-times"></i></button>
+
             <button onclick="press('7')">7</button>
             <button onclick="press('8')">8</button>
             <button onclick="press('9')">9</button>
-            <button onclick="press('-')"><i class="fas fa-minus"></i></button>
+            <button onclick="press('*')"><i class="fas fa-times"></i></button>
+
             <button onclick="press('4')">4</button>
             <button onclick="press('5')">5</button>
             <button onclick="press('6')">6</button>
-            <button onclick="press('+')"><i class="fas fa-plus"></i></button>
+            <button onclick="press('-')"><i class="fas fa-minus"></i></button>
+
             <button onclick="press('1')">1</button>
             <button onclick="press('2')">2</button>
             <button onclick="press('3')">3</button>
-            <button class="btn-equal" onclick="calculate()"><i class="fas fa-equals"></i></button>
-            <button onclick="press('0')" class="zero">0</button>
+            <button onclick="press('+')"><i class="fas fa-plus"></i></button>
+
+            <button onclick="press('0')" class="span-two">0</button>
             <button onclick="press('.')">.</button>
+            <button class="btn-equal" onclick="calculate()"><i class="fas fa-equals"></i></button>
           </div>
         </div>
 

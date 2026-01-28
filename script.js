@@ -2,6 +2,7 @@
 let expression = "";
 let memory = 0;
 let history = [];
+let lastCalculationResult = ""; // Stores "Expr = Result" for sharing
 let voiceEnabled = true; // Default Voice Output ON
 
 /* --- INITIALIZATION & PERFORMANCE OPTIMIZATION --- */
@@ -90,32 +91,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Global Keyboard Support for Standard Calculator (Desktop)
-  document.addEventListener('keydown', function (e) {
-    // Only capture if Standard Calc is active
-    if (!document.querySelector('#standard.calculator.active')) return;
+  // Global Keyboard Support for Standard Calculator REMOVED (Handled by Global Listener at bottom)
 
-    // Don't capture if user is focusing on another input (like GST)
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
-
-    const key = e.key;
-
-    // Numbers and Operators
-    if (/[0-9.]/.test(key)) {
-      press(key);
-    } else if (['+', '-', '*', '/'].includes(key)) {
-      press(key);
-    } else if (key === 'Enter' || key === '=') {
-      e.preventDefault(); // Prevent default Enter submission
-      calculate();
-    } else if (key === 'Backspace') {
-      backspace();
-    } else if (key === 'Escape') {
-      clearDisplay();
-    } else if (key === '%') {
-      press('%');
-    }
-  });
 
   // Hide Splash
   setTimeout(() => {
@@ -181,9 +158,14 @@ function shareToWhatsApp(context) {
   let text = "";
 
   if (context === 'standard') {
-    const disp = document.getElementById('display').value;
-    if (!disp) return alert("Nothing to share!");
-    text = `*Smart Calculator Result:* \n${disp}`;
+    if (!lastCalculationResult) {
+      // Fallback to display value if user types but doesn't hit =
+      const disp = document.getElementById('display').value;
+      if (!disp) return alert("Calculate something first!");
+      text = `*Smart Calculator Result:* \n${disp}`;
+    } else {
+      text = `*Smart Calculator Result:* \n${lastCalculationResult}`;
+    }
 
   } else if (context === 'cash') {
     text = `*Cash Calculator Summary*\n---------------------\n`;
@@ -464,16 +446,36 @@ function clearDisplay() {
 }
 
 function backspace() {
-  const display = document.getElementById("display");
-  if (document.activeElement === display) {
-    setTimeout(() => expression = display.value, 0);
-    playClick();
-    return;
-  }
+  // Logic simplified: Always remove last char from expression if it exists.
+  // We removed the 'document.activeElement === display' check because
+  // the display is readonly, which messed up keyboard support if focused.
+
   if (expression.length > 0) {
     expression = expression.slice(0, -1);
     updateDisplay(expression);
     playClick();
+  }
+}
+
+/* --- INFO MODAL LOGIC --- */
+function toggleInfo() {
+  const modal = document.getElementById('infoModal');
+  const isActive = modal.classList.contains('active');
+
+  if (isActive) {
+    modal.classList.remove('active');
+    setTimeout(() => modal.style.display = 'none', 300); // Wait for transition
+  } else {
+    modal.style.display = 'flex';
+    // Small delay to allow display:flex to apply before adding class for opacity transition
+    setTimeout(() => modal.classList.add('active'), 10);
+  }
+  playClick();
+}
+
+function closeInfo(e) {
+  if (e.target.id === 'infoModal') {
+    toggleInfo();
   }
 }
 
@@ -485,11 +487,31 @@ function calculate() {
     expr = expr.replace(/\^/g, '**');
 
     // Percentage Logic
-    expr = expr.replace(/(\d+(?:\.\d+)?)([+\-])(\d+(?:\.\d+)?)%/g, (m, a, op, b) => {
-      let p = parseFloat(b) / 100;
-      return op === '+' ? `(${a}*(1+${p}))` : `(${a}*(1-${p}))`;
-    });
-    expr = expr.replace(/(\d+(?:\.\d+)?)%/g, '($1/100)');
+    while (expr.includes('%')) {
+      const index = expr.indexOf('%');
+      const sub = expr.substring(0, index + 1);
+      const tail = expr.substring(index + 1);
+
+      // Match "Base Operator Number%"
+      const match = sub.match(/(.*)([\+\-\*\/])(\d+(?:\.\d+)?)%$/);
+
+      if (match) {
+        const base = match[1];
+        const op = match[2];
+        const num = match[3];
+
+        if (op === '+' || op === '-') {
+          const p = parseFloat(num) / 100;
+          expr = `(${base}) * (1 ${op} ${p})` + tail;
+        } else { // * or /
+          const p = parseFloat(num) / 100;
+          expr = `${base}${op}(${p})` + tail;
+        }
+      } else {
+        // No preceding operator (e.g. "10%")
+        expr = sub.replace(/(\d+(?:\.\d+)?)%$/, '($1/100)') + tail;
+      }
+    }
 
     // Remove leading zeros
     expr = expr.replace(/(?<![\d.])0+(?=[1-9])/g, '');
@@ -506,6 +528,7 @@ function calculate() {
 
     result = parseFloat(result.toFixed(10));
     const calculation = `${expression} = ${result}`;
+    lastCalculationResult = calculation; // Store for sharing
     addToHistory(calculation);
     expression = result.toString();
     updateDisplay(expression);
@@ -1177,24 +1200,20 @@ document.addEventListener('keydown', function (e) {
 
   /* 3. STANDARD CALCULATOR HANDLER */
   if (activeStandard) {
-    const display = document.getElementById("display");
-
-    // If user is focused on the textarea, just handle special keys
-    if (document.activeElement === display) {
-      if (key === 'Enter' || key === '=') { e.preventDefault(); calculate(); }
-      else if (key === 'Delete') { e.preventDefault(); clearDisplay(); }
+    // Allow typing in other inputs (like GST select) without interference
+    if ((e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') && e.target.id !== 'display') {
       return;
     }
 
     // Global capture for Standard Mode (Direct typing)
-    if ((key >= '0' && key <= '9') || ['+', '-', '*', '/', '.', '(', ')'].includes(key)) {
+    if (!e.ctrlKey && ((key >= '0' && key <= '9') || ['+', '-', '*', '/', '.', '(', ')', '%'].includes(key))) {
       e.preventDefault();
       press(key);
     }
     else if (key === '^') { e.preventDefault(); press('^'); }
     else if (key === 'Enter' || key === '=') { e.preventDefault(); calculate(); }
-    else if (key === 'Backspace') { backspace(); }
-    else if (key === 'Delete') { clearDisplay(); }
+    else if (key === 'Backspace') { e.preventDefault(); backspace(); }
+    else if (key === 'Delete') { e.preventDefault(); clearDisplay(); }
     else if (e.ctrlKey) {
       if (key === 'm') { memoryRecall(); e.preventDefault(); }
       else if (key === '+') { memoryAdd(); e.preventDefault(); }
